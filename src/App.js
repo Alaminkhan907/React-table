@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTable } from 'react-table';
+import { useTable, useSortBy } from 'react-table';
 
 function Example() {
 
@@ -35,7 +35,7 @@ function Example() {
          accessor: 'col2',
        },
        {
-         Header: 'Weather Forecast now',
+         Header: 'Weather Forecast',
          accessor: 'col3', // accessor is the "key" in the data
        },
      ],
@@ -48,24 +48,30 @@ function Example() {
    headerGroups,
    rows,
    prepareRow,
- } = useTable({ columns, data })
+ } = useTable({ columns, data }, useSortBy);
 
  return (
-  <>
      <div>
-       <table {...getTableProps()} style={{ border: 'solid 1px black'}}>
+       <table {...getTableProps()} style={{ border: 'solid 1px black' }}>
          <thead>
          {headerGroups.map(headerGroup => (
              <tr {...headerGroup.getHeaderGroupProps()}>
                {headerGroup.headers.map(column => (
                    <th
-                       {...column.getHeaderProps()}
+                       {...column.getHeaderProps(column.getSortByToggleProps())}
                        style={{
                          borderBottom: 'solid 3px red',
                          color: 'black',
                        }}
                    >
                      {column.render('Header')}
+                     <span>
+                       {column.isSorted
+                           ? column.isSortedDesc
+                               ? '🔽'
+                               : '🔼'
+                           : ''}
+                    </span>
                    </th>
                ))}
              </tr>
@@ -95,7 +101,6 @@ function Example() {
          </tbody>
        </table>
      </div>
-     </>
  );
 }
 
