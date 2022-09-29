@@ -1,5 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { useTable, useSortBy } from 'react-table';
+import React from 'react';
+import { useTable, useSortBy, useFilters, useGlobalFilter, useAsyncDebounce } from 'react-table';
+
+function GlobalFilter({
+                       preGlobalFilteredRows,
+                       globalFilter,
+                       setGlobalFilter,
+                     }) {
+ const count = preGlobalFilteredRows.length
+ const [value, setValue] = React.useState(globalFilter)
+ const onChange = useAsyncDebounce(value => {
+   setGlobalFilter(value || undefined)
+ }, 200)
+
+ return (
+   <span>
+     Search:{' '}
+     <input
+       value={value || ""}
+       onChange={e => {
+         setValue(e.target.value);
+         onChange(e.target.value);
+       }}
+       placeholder={`${count} records...`}
+       style={{
+         fontSize: '1.1rem',
+         border: '0',
+       }}
+     />
+   </span>
+ )
+}
+
+// Define a default UI for filtering
+function DefaultColumnFilter({
+                              column: { filterValue, preFilteredRows, setFilter },
+                            }) {
+ const count = preFilteredRows.length
+
+ return (
+   <input
+     value={filterValue || ''}
+     onChange={e => {
+       setFilter(e.target.value || undefined) // Set undefined to remove the filter entirely
+     }}
+     placeholder={`Search ${count} records...`}
+   />
+ )
+}
 
 function Example() {
 
@@ -9,16 +56,36 @@ function Example() {
          col1: 'Minsk',
          col2: '27',
          col3: 'rain',
+         col4: '739',
+         col5: '90',
        },
        {
          col1: 'Vilnius',
          col2: '30',
          col3: 'rain',
+         col4: '740',
+         col5: '87',
        },
        {
          col1: 'London',
          col2: '23',
          col3: 'rain',
+         col4: '743',
+         col5: '77',
+       },
+       {
+         col1: 'Madrid',
+         col2: '34',
+         col3: 'sunny',
+         col4: '738',
+         col5: '40',
+       },
+       {
+         col1: 'Warsaw',
+         col2: '25',
+         col3: 'heavy rain',
+         col4: '739',
+         col5: '88',
        },
      ],
      []
@@ -36,10 +103,26 @@ function Example() {
        },
        {
          Header: 'Weather Forecast',
-         accessor: 'col3', // accessor is the "key" in the data
+         accessor: 'col3',
+       },
+       {
+         Header: 'Pressure',
+         accessor: 'col4',
+       },
+       {
+         Header: 'Humidity',
+         accessor: 'col5',
        },
      ],
      []
+ )
+
+ const defaultColumn = React.useMemo(
+   () => ({
+     // Let's set up our default Filter UI
+     Filter: DefaultColumnFilter,
+   }),
+   []
  )
 
  const {
@@ -48,7 +131,20 @@ function Example() {
    headerGroups,
    rows,
    prepareRow,
- } = useTable({ columns, data }, useSortBy);
+   state,
+   visibleColumns,
+   preGlobalFilteredRows,
+   setGlobalFilter,
+ } = useTable(
+   {
+     columns,
+     data,
+     defaultColumn, // Be sure to pass the defaultColumn option
+   },
+   useFilters,
+   useGlobalFilter,
+   useSortBy
+ );
 
  return (
      <div>
@@ -72,10 +168,25 @@ function Example() {
                                : '🔼'
                            : ''}
                     </span>
+                    <div>{column.canFilter ? column.render('Filter') : null}</div>
                    </th>
                ))}
              </tr>
          ))}
+         <tr>
+           <th
+             colSpan={visibleColumns.length}
+             style={{
+               textAlign: 'left',
+             }}
+           >
+             <GlobalFilter
+               preGlobalFilteredRows={preGlobalFilteredRows}
+               globalFilter={state.globalFilter}
+               setGlobalFilter={setGlobalFilter}
+             />
+           </th>
+         </tr>
          </thead>
          <tbody {...getTableBodyProps()}>
          {rows.map(row => {
